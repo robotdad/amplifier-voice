@@ -1,13 +1,18 @@
 /**
- * theme-init.js — early theme initialisation stub for standalone voice plugin.
- *
- * The full version is served by amplifier-distro and handles system dark/light
- * preference sync, localStorage persistence, and cross-tab theme events.
- * This stub is a no-op: the voice plugin ships its own dark-theme tokens in
- * amplifier-theme.css so no runtime switching is needed when running standalone.
+ * Theme initialization - runs synchronously in <head> to prevent flash
+ * Sets data-theme attribute on <html> based on system preference
  */
-(function () {
-  'use strict';
-  // Nothing to initialise in standalone mode — CSS variables in
-  // amplifier-theme.css provide the complete dark-theme token set.
+(function() {
+  try {
+    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (prefersDark) {
+      document.documentElement.dataset.theme = 'dark';
+      document.documentElement.style.backgroundColor = '#171717';
+    } else {
+      document.documentElement.style.backgroundColor = '#FDFCFA';
+    }
+  } catch(e) {
+    // Fail silently - defaults to light mode via CSS :root tokens
+  }
 })();
