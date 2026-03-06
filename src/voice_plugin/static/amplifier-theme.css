@@ -1,0 +1,109 @@
+/**
+ * amplifier-theme.css — design tokens for Amplifier Voice (standalone stub)
+ *
+ * Provides the CSS custom properties consumed by index.html inline styles
+ * when running outside the full amplifier-distro shell. The full theme is
+ * served by amplifier-distro; this stub keeps the voice plugin functional
+ * when run standalone or in amplifierd.
+ */
+
+/* ------------------------------------------------------------------ */
+/*  Design tokens — dark theme (default)                              */
+/* ------------------------------------------------------------------ */
+:root {
+  /* Canvas (backgrounds) */
+  --canvas:         #0f1117;
+  --canvas-warm:    #13151c;
+  --canvas-stone:   #1a1d26;
+  --canvas-mist:    #2a2d3a;
+
+  /* Ink (text) */
+  --ink:            #e2e8f0;
+  --ink-slate:      #94a3b8;
+  --ink-fog:        #64748b;
+  --text-disabled:  #475569;
+
+  /* Signal — Amplifier purple */
+  --signal:         #818cf8;
+  --signal-light:   #a5b4fc;
+  --signal-dark:    #6366f1;
+  --signal-soft:    #1e1b4b;
+
+  /* Semantic colours */
+  --warning:        #f59e0b;
+  --warning-soft:   #1c1208;
+
+  --success:        #34d399;
+  --success-soft:   #052e16;
+
+  --error:          #f87171;
+  --error-soft:     #2d0a0a;
+
+  /* Typography */
+  --font-heading:   'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  --font-body:      'SF Pro Text',    'Segoe UI', system-ui, sans-serif;
+
+  /* Radii */
+  --radius-card:    12px;
+  --radius-input:   8px;
+  --radius-button:  8px;
+  --radius-subtle:  4px;
+
+  /* Motion */
+  --duration-normal: 200ms;
+  --duration-fast:   120ms;
+  --ease-out:        cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Base reset / body defaults                                         */
+/* ------------------------------------------------------------------ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Wordmark                                                           */
+/* ------------------------------------------------------------------ */
+.wordmark {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--signal);
+}
+
+.wordmark-sm {
+  font-size: 1.1rem;
+}
+
+.wordmark-md {
+  font-size: 1.5rem;
+}
+
+.wordmark-lg {
+  font-size: 2rem;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Shared animations                                                  */
+/* ------------------------------------------------------------------ */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

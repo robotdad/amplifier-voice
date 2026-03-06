@@ -87,3 +87,80 @@ def test_cancel_invalid_level(client):
 def test_end_session_invalid_id(client):
     resp = client.post("/voice/sessions/!!invalid!!/end", json={})
     assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Static file catch-all route
+# ---------------------------------------------------------------------------
+
+
+def test_static_vendor_js(client):
+    """vendor.js is served with JS content-type."""
+    resp = client.get("/voice/static/vendor.js")
+    assert resp.status_code == 200
+    assert "javascript" in resp.headers["content-type"]
+
+
+def test_static_connection_health_mjs(client):
+    """connection-health.mjs is served with JS content-type (ES module)."""
+    resp = client.get("/voice/static/connection-health.mjs")
+    assert resp.status_code == 200
+    assert "javascript" in resp.headers["content-type"]
+
+
+def test_static_amplifier_theme_css(client):
+    """amplifier-theme.css is served with CSS content-type."""
+    resp = client.get("/voice/static/amplifier-theme.css")
+    assert resp.status_code == 200
+    assert "text/css" in resp.headers["content-type"]
+
+
+def test_static_theme_init_js(client):
+    """theme-init.js stub is served successfully."""
+    resp = client.get("/voice/static/theme-init.js")
+    assert resp.status_code == 200
+    assert "javascript" in resp.headers["content-type"]
+
+
+def test_static_feedback_widget_js(client):
+    """feedback-widget.js stub is served and exposes AmplifierFeedback."""
+    resp = client.get("/voice/static/feedback-widget.js")
+    assert resp.status_code == 200
+    assert "javascript" in resp.headers["content-type"]
+    assert "AmplifierFeedback" in resp.text
+
+
+def test_static_favicon_svg(client):
+    """favicon.svg stub is served with SVG content-type."""
+    resp = client.get("/voice/static/favicon.svg")
+    assert resp.status_code == 200
+    assert "svg" in resp.headers["content-type"]
+
+
+def test_static_missing_file_returns_404(client):
+    """Non-existent static files return 404."""
+    resp = client.get("/voice/static/does-not-exist.js")
+    assert resp.status_code == 404
+
+
+def test_static_directory_traversal_blocked(client):
+    """Path traversal attempts outside static/ are blocked."""
+    resp = client.get("/voice/static/../routes.py")
+    # FastAPI normalises the path before it reaches the handler, but the
+    # handler's resolve() + relative_to() check catches any that slip through.
+    assert resp.status_code in (404, 400)
+
+
+def test_index_html_uses_relative_asset_paths(client):
+    """index.html must reference assets with relative paths, not /apps/voice/."""
+    resp = client.get("/voice/")
+    assert resp.status_code == 200
+    # Relative paths should be present
+    assert 'src="static/vendor.js"' in resp.text
+    assert 'src="static/connection-health.mjs"' in resp.text
+    assert 'href="static/amplifier-theme.css"' in resp.text
+    # Old absolute /apps/voice/ paths must be gone
+    assert "/apps/voice/static/" not in resp.text
+    # Global /static/ parent-app paths must be gone
+    assert 'href="/static/' not in resp.text
+    assert 'src="/static/' not in resp.text

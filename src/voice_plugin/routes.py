@@ -25,6 +25,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import (
+    FileResponse,
     HTMLResponse,
     JSONResponse,
     PlainTextResponse,
@@ -80,27 +81,37 @@ def create_static_routes() -> APIRouter:
             status_code=200,
         )
 
-    @router.get("/voice/static/vendor.js", response_model=None, tags=["voice"])
-    async def vendor_js():
-        js_path = Path(__file__).parent / "static" / "vendor.js"
-        if js_path.exists():
-            return Response(
-                content=js_path.read_bytes(), media_type="application/javascript"
-            )
-        return PlainTextResponse(content="// vendor.js not built yet", status_code=404)
+    # Media-type map; .mjs must be served as JS so browsers accept ES modules
+    _STATIC_MIME: dict[str, str] = {
+        ".css": "text/css; charset=utf-8",
+        ".js": "application/javascript",
+        ".mjs": "application/javascript",
+        ".svg": "image/svg+xml",
+        ".html": "text/html; charset=utf-8",
+        ".json": "application/json",
+        ".ico": "image/x-icon",
+        ".png": "image/png",
+        ".woff2": "font/woff2",
+        ".woff": "font/woff",
+    }
 
-    @router.get(
-        "/voice/static/connection-health.mjs", response_model=None, tags=["voice"]
-    )
-    async def connection_health_mjs():
-        mjs_path = Path(__file__).parent / "static" / "connection-health.mjs"
-        if mjs_path.exists():
-            return Response(
-                content=mjs_path.read_bytes(), media_type="application/javascript"
-            )
-        return PlainTextResponse(
-            content="// connection-health.mjs not found", status_code=404
-        )
+    @router.get("/voice/static/{path:path}", response_model=None, tags=["voice"])
+    async def static_files(path: str) -> Response:
+        """Serve any file from the plugin's static/ directory."""
+        static_dir = (Path(__file__).parent / "static").resolve()
+        # Resolve and guard against directory traversal
+        try:
+            file_path = (static_dir / path).resolve()
+            file_path.relative_to(static_dir)  # raises ValueError if outside
+        except (ValueError, OSError):
+            return PlainTextResponse(content="Not found", status_code=404)
+
+        if not file_path.exists() or not file_path.is_file():
+            return PlainTextResponse(content="Not found", status_code=404)
+
+        suffix = file_path.suffix.lower()
+        media_type = _STATIC_MIME.get(suffix, "application/octet-stream")
+        return Response(content=file_path.read_bytes(), media_type=media_type)
 
     return router
 
