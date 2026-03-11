@@ -38,15 +38,17 @@ async def create_client_secret(config: VoiceConfig) -> dict[str, Any]:
         "Authorization": f"Bearer {config.openai_api_key}",
         "Content-Type": "application/json",
     }
-    payload = {
+    payload: dict[str, Any] = {
         "session": {
             "type": "realtime",
             "model": config.model,
-            "voice": config.voice,
             "instructions": config.instructions,
-            "tools": config.tools,
         }
     }
+    # Only include tools if non-empty; voice is set via session.update
+    # on the data channel, not at client_secrets creation time.
+    if config.tools:
+        payload["session"]["tools"] = config.tools
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
@@ -56,6 +58,11 @@ async def create_client_secret(config: VoiceConfig) -> dict[str, Any]:
         )
 
     if resp.is_error:
+        import logging
+
+        logging.getLogger(__name__).error(
+            "create_client_secret failed %s: %s", resp.status_code, resp.text
+        )
         raise HTTPException(status_code=resp.status_code, detail=resp.text)
 
     data = resp.json()
