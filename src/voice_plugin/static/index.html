@@ -748,7 +748,7 @@ body {
         const resp = await fetch('/voice/session');
         if (!resp.ok) throw new Error(`Session token fetch failed: ${resp.status}`);
         const data = await resp.json();
-        token = data.value;
+        token = data.client_secret.value;
       } catch (err) {
         console.error('[useWebRTC] Failed to fetch session token:', err);
         updateState('disconnected');
@@ -849,6 +849,21 @@ body {
         };
         dc.send(JSON.stringify(sessionConfig));
 
+        // Send retention ratio truncation config.  When the context window
+        // fills, the oldest (1 - ratio) portion is dropped in one chunk.
+        // This enables long-running sessions without manual truncation.
+        const truncationConfig = {
+          type: 'session.update',
+          session: {
+            type: 'realtime',
+            truncation: {
+              type: 'retention_ratio',
+              retention_ratio: 0.8,
+            },
+          },
+        };
+        dc.send(JSON.stringify(truncationConfig));
+
         // Inject resume context items into the Realtime API session (non-empty on
         // resume only). Sent after session.update so config is already in place.
         // A response.create follows so the model can greet the user with context.
@@ -917,6 +932,9 @@ body {
           body: pc.localDescription.sdp,
         });
         if (!sdpResp.ok) throw new Error(`SDP exchange failed: ${sdpResp.status}`);
+        // Extract call_id from custom header (identifies the WebRTC call)
+        const callId = sdpResp.headers.get('X-Call-Id') || '';
+        if (callId) console.debug('[useWebRTC] call_id:', callId);
         sdpAnswer = await sdpResp.text();
       } catch (err) {
         console.error('[useWebRTC] SDP exchange failed:', err);
@@ -1438,6 +1456,7 @@ body {
       sendDataChannelMessage({
         type: 'session.update',
         session: {
+          type: 'realtime',
           audio: { input: { turn_detection: { type: 'server_vad', create_response: false } } },
         },
       });
@@ -1449,6 +1468,7 @@ body {
       sendDataChannelMessage({
         type: 'session.update',
         session: {
+          type: 'realtime',
           audio: { input: { turn_detection: { type: 'server_vad', create_response: true } } },
         },
       });

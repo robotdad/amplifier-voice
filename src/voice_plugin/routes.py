@@ -150,8 +150,8 @@ def create_signaling_routes(settings: VoicePluginSettings) -> APIRouter:
             instructions=vcfg["instructions"],
             openai_api_key=os.environ.get("OPENAI_API_KEY", ""),
         )
-        token = await rt.create_client_secret(config)
-        return JSONResponse(content={"value": token})
+        result = await rt.create_client_secret(config)
+        return JSONResponse(content=result)
 
     @router.post("/voice/sdp", response_model=None, tags=["voice"])
     async def exchange_sdp(request: Request) -> PlainTextResponse | JSONResponse:
@@ -174,8 +174,12 @@ def create_signaling_routes(settings: VoicePluginSettings) -> APIRouter:
 
         from voice_plugin import realtime as rt
 
-        sdp_answer = await rt.exchange_sdp(offer_sdp, ephemeral_token, vcfg["model"])
-        return PlainTextResponse(content=sdp_answer, media_type="application/sdp")
+        result = await rt.exchange_sdp(offer_sdp, ephemeral_token, vcfg["model"])
+        return PlainTextResponse(
+            content=result["sdp"],
+            media_type="application/sdp",
+            headers={"X-Call-Id": result.get("call_id", "")},
+        )
 
     return router
 
@@ -312,7 +316,8 @@ def create_session_routes(
             instructions=vcfg["instructions"],
             openai_api_key=os.environ.get("OPENAI_API_KEY", ""),
         )
-        client_secret = await rt.create_client_secret(config)
+        secret_result = await rt.create_client_secret(config)
+        client_secret = secret_result["client_secret"]["value"]
 
         # Create a fresh VoiceConnection for resume
         conn = VoiceConnection(
