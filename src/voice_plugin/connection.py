@@ -415,7 +415,7 @@ class VoiceConnection:
 
         coordinator = session.coordinator
         mount_points: dict[str, Any] = coordinator.mount_points
-        tools: Any = mount_points.get("tool", {})
+        tools: Any = mount_points.get("tools", {})
 
         if not isinstance(tools, dict):
             logger.debug("Unexpected tool mount_points structure; skipping restriction")
